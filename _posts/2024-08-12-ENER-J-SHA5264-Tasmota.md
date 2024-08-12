@@ -6,10 +6,9 @@ tags: ["Homeassistant","Tasmota","Smarthome"]
 typora-root-url: ./..
 ---
 
-> This was originally a gist posted here https://gist.github.com/en4rab/6bc83b2c9f850ea29eeaa5f1833a21fd 4 years ago.
-> I have removed references to tuya convert as it hasn't worked for a long time now, you should be able to flash it with a serial adapter connected to the test points though.
-> If you plan to do this it would be a good idea to buy just one SHA5264 to check they still use an ESP8266 chip as most Tuya devices have switched to Beken chips.
-> {: .prompt-info }
+> This was originally a gist posted [here](https://gist.github.com/en4rab/6bc83b2c9f850ea29eeaa5f1833a21fd) 4 years ago.  
+> I have removed references to tuya convert as it hasn't worked for a long time now. You should be able to flash it with a serial adapter connected to the test points though. If you plan to do this it would be a good idea to buy just one SHA5264 to check they still use an ESP8266 chip as most Tuya devices have switched to Beken chips.
+{: .prompt-info }
 
 While looking at home automation with a particular interest in local control with [Home Assistant](https://www.home-assistant.io/) I thought I would have a look at a smart socket with energy monitoring.
 At the time this particular model didn't have an entry on the [Tasmota device templates repository](https://templates.blakadder.com/index.html) nor was it listed as not compatible. I thought I would take a chance on it being ESP8266 based, the screws in the case also suggested it could be opened without damage in case it required serial flashing or a multimeter to work out how the energy monitoring chip was connected which is very helpful and saves destroying a plug for science.
