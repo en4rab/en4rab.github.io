@@ -6,13 +6,10 @@ tags: ["Homeassistant","Tasmota","Smarthome"]
 typora-root-url: ./..
 ---
 
-# Flashing an ENER-J SHA5264 wifi smart plug to Tasmota
-
-
 > This was originally a gist posted [here](https://gist.github.com/en4rab/6bc83b2c9f850ea29eeaa5f1833a21fd) 4 years ago.
 > I have removed references to tuya convert as it hasn't worked for a long time now, you should be able to flash it with a serial adapter connected to the test points though.
 > If you plan to do this it would be a good idea to but just one SHA5264 to check they still use an ESP8266 chip as most Tuya devices have switched to Beken chips.
-> {: .prompt-warning }
+> {: .prompt-info }
 
 While looking at home automation with a particular interest in local control with [Home Assistant](https://www.home-assistant.io/) I thought I would have a look at a smart socket with energy monitoring.
 At the time this particular model didn't have an entry on the [Tasmota device templates repository](https://templates.blakadder.com/index.html) nor was it listed as not compatible. I thought I would take a chance on it being ESP8266 based, the screws in the case also suggested it could be opened without damage in case it required serial flashing or a multimeter to work out how the energy monitoring chip was connected which is very helpful and saves destroying a plug for science.
@@ -47,10 +44,8 @@ Looking at the back of the PCB reveals test points for 5v, GND, Tx, Rx, RST and 
 
 There were already 2 ENER-J devices listed on the tasmota device templates repository and both of those were listed as Tuya based which suggested that all the ENER-J Wi-Fi devices would be based on that platform. When this was originally written tuya-convert worked but that was fixed years ago now and I don't expect it would work with a newly purchased device so it will require flashing using a serial cable: 
 
-```
 > Do NOT plug the socket into the mains while flashing the device with a serial cable!
 {: .prompt-danger }
-```
 
 + With the socket unplugged unscrew the cover and solder a usb to TTL adapter to the test points on the board [More info here](https://tasmota.github.io/docs/Getting-Started/) 
 + Using [Tasmotizer](https://github.com/tasmota/tasmotizer) or the [Tasmota web installer](https://tasmota.github.io/install/) install the tasmota firmware.
