@@ -57,7 +57,7 @@ Later a user on reddit asked about this protocol but specifically about keypads 
 
 ![Keypad Key Pressed](/assets/posts/2024-08-15-Paxton-Sigrok/keypad-1-press.png) ![Keypad Key released](/assets/posts/2024-08-15-Paxton-Sigrok/keypad-1-release.png)
 
-With the output now understood it should be possible to build a sniffer like the [ESPKey](https://github.com/octosavvi/ESPKey) or use a reader to sniff card like the [BishopFox Tastic](https://resources.bishopfox.com/resources/tools/rfid-hacking/attack-tools/) 
+With the output now understood it should be possible to build a sniffer like the [ESPKey](https://github.com/octosavvi/ESPKey) or use a reader to sniff card numbers like the [BishopFox Tastic](https://resources.bishopfox.com/resources/tools/rfid-hacking/attack-tools/) 
 
 ## Download
 
