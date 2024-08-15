@@ -44,9 +44,6 @@ At first I was decoding logic traces by hand but that gets old very very quickly
 
 ## Automating the decoding
 
-> This was very much a learning exercise for me so the code is not going to be elegant but it does work!  
-{: .prompt-warning }
-
 The sigrok project have a page on how to [get started writing a decoder](https://sigrok.org/wiki/Protocol_decoder_HOWTO) and the existing decoders source is available to help you understand how they work. Using some of these existing decoders as guides I managed to make a decoder. The outputs of this decoder bits/digits/card show the development stages where initially I just decoded the bits while I learnt how it all worked then I added parsing the bits and converting them to characters. It was at this point I discovered that scanning a switch fob rather than a net2 fob caused extra data to be output with 3 fields of data separated by a "D" so I added a third output with the numbers grouped as these fields.
 
  ![Paxton decoder working](/assets/posts/2024-08-15-Paxton-Sigrok/screenshot.png)
@@ -60,5 +57,8 @@ Later a user on reddit asked about this protocol but specifically about keypads 
 With the output now understood it should be possible to build a sniffer like the [ESPKey](https://github.com/octosavvi/ESPKey) or use a reader to sniff card numbers like the [BishopFox Tastic](https://resources.bishopfox.com/resources/tools/rfid-hacking/attack-tools/) 
 
 ## Download
+
+> This was very much a learning exercise for me so the code is not going to be elegant but it does work!  
+{: .prompt-warning }
 
 If for some reason you find yourself messing with these readers you can download the [decoder plugin on github](https://github.com/en4rab/sigrok-paxton-pd)
