@@ -13,7 +13,7 @@ While messing with a CF-U1 handheld PC that I bought off ebay I managed to mess 
 seems it reverted to previous settings which included an unknown BIOS password, it would however still
 boot into windows. Since I could still boot windows I was able to dump the bios flash using 
 AFUWINGUI.EXE the version I used was 3.09.03.1462 which is available here:  
-<https://www.ami.com/support-other/> Click on Aptio 4 AMI Firmware Update Utility
+<https://ami.com/en/?Aptio_4_AMI_Firmware_Update_Utility.zip>
 
 There may be a more appropriate version to use as this seemed to have trouble checking the bios 
 version when flashing but did work if you selected "Do Not Check ROM ID" but flashing isnt needed to 
