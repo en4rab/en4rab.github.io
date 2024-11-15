@@ -27,6 +27,6 @@
 #   icon: 'fab fa-stack-overflow'
 #   url:  ''                  # Fill with your stackoverflow homepage
 #
- - type: bluesky
-   icon: 'fa-brands fa-bluesky'
-   url: 'https://bsky.app/profile/en4rab.bsky.social'                   # Fill with your Bluesky profile link
+- type: bluesky
+  icon: 'fa-brands fa-bluesky'
+  url: 'https://bsky.app/profile/en4rab.bsky.social'                   # Fill with your Bluesky profile link
