@@ -3,9 +3,9 @@
 - type: github
   icon: "fab fa-github"
 
-- type: twitter
-  icon: "fa-brands fa-x-twitter"
-
+#- type: twitter
+#  icon: "fa-brands fa-x-twitter"
+#
 #- type: email
 #  icon: "fas fa-envelope"
 #  noblank: true # open link in current tab
@@ -26,3 +26,7 @@
 # - type: stack-overflow
 #   icon: 'fab fa-stack-overflow'
 #   url:  ''                  # Fill with your stackoverflow homepage
+#
+ - type: bluesky
+   icon: 'fa-brands fa-bluesky'
+   url: 'https://bsky.app/profile/en4rab.bsky.social'                   # Fill with your Bluesky profile link
