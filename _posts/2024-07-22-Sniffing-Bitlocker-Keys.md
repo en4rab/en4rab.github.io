@@ -1,5 +1,5 @@
 ---
-title: "I Hacked BitLocker in 25 Seconds With This Soldering Iron and the Power of Friendship"
+title: "Sniffiing the TPM to recover bitlocker VMK and FVEK keys"
 layout: "post"
 categories: ["Research"]
 tags: ["Research","Bitlocker","TPM"]
