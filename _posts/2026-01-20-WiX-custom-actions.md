@@ -15,8 +15,10 @@ As part of an ongoing investigation into the Paxton10 access control system I to
 
 ## What creates the certs?
 
-Searching for files on a server bought from eBay turned up two batch files in "C:\Program Files\Paxton Access\Dms\openssl" that created certificates if they didn't exist. However the password for the private key was supplied to these batch files as an argument as they are basically the same as in the Net2 writeup above.  
-A bit more searching showed these files were installed by the nginx.msi package of the server update.  Even more searching turned up installation logs in "C:\Users\Administrator\AppData\Local\Temp\" the log dms_setup_20220822141332_004_nginx.log.  
+Searching for files on a server bought from eBay turned up two batch files in "C:\Program Files\Paxton Access\Dms\openssl" that created certificates if they didn't exist.  
+However the password for the private key was supplied to these batch files as an argument as they are basically the same as in the Net2 writeup above.  
+A bit more searching showed these files were installed by the nginx.msi package of the server update.  Even more searching turned up installation logs in  
+"C:\Users\Administrator\AppData\Local\Temp\dms_setup_20220822141332_004_nginx.log".  
 This contained the password for the private key as the full command line generating the server cert had been logged to the file.
 
 ![](/assets/posts/2026-01-20-WiX-custom-actions/CWE-532.png) 
