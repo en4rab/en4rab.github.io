@@ -107,5 +107,3 @@ Ghecko, libsigrok stacked Protocol Decoder for TPM 2.0 & TPM 1.2 transactions fr
 [https://github.com/ghecko/libsigrokdecoder_spi-tpm](https://github.com/ghecko/libsigrokdecoder_spi-tpm)  
 Libyal, Library and tools to access the BitLocker Drive Encryption (BDE) encrypted volumes  
 [https://github.com/libyal/libbde](https://github.com/libyal/libbde)  
-
- 
