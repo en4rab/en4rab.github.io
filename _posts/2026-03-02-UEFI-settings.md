@@ -34,8 +34,10 @@ Open the image file in UEFITool and search for the GUID 899407D7-99FE-43D8-9A21-
 ![UEFITool](/assets/posts/2026-03-02-UEFI-settings/UEFITool.png)
 
 ## Extract the IFR 
-Use ifrextractor to extract all the menu data from .efi file you just saved 
-```ifrextractor.exe Section_PE32_image_Setup_Setup_body.efi``` 
+Use ifrextractor to extract all the menu data from .efi file you just saved  
+```
+ifrextractor.exe Section_PE32_image_Setup_Setup_body.efi
+``` 
 This will create the file Section_PE32_image_Setup_Setup_body.efi.0.0.en-US.uefi.ifr.txt 
 
 The top of this file lists the variable storage GUID's and how they are mapped to VarStoreId. In the example below EC87D643-EBA4-4BB5-A1E5-3F3E36B20DA9 (Setup) is referred to as VarStoreId 0x1.
@@ -57,7 +59,7 @@ Opening this GUID in UEFI explorer and selecting body hex view shows the setting
 ## Computrace
 
 Computrace is a persistent BIOS-level tracking agent sometimes pre-activated on enterprise/refurbished machines
-it is also enabled in the uefi menu and is supposed to be permanently on when activated. I don't have a suitable test device to hand so it's possible this wont work or there are additional setting that need to be changed to turn it off but this is a place to start looking.
+it is also enabled in the uefi menu and is supposed to be permanently on when activated. I don't have a suitable test device to hand so it's possible this wont work or there are additional settings that need to be changed to turn it off but this is a place to start looking.
 Below is the menu for the the computrace setting:
 
 ![Computrace](/assets/posts/2026-03-02-UEFI-settings/computrace.png)
@@ -78,7 +80,7 @@ For settings that are stored in EC87D643-EBA4-4BB5-A1E5-3F3E36B20DA9 it should b
 
 To do this you would have to setup a usb stick so you can boot into an efi shell and then run the appropriate AmiSetupWriter command. This is higher risk though as you would not have a clean backup to write back to the flash in case it caused problems.
 
-For any Japanese readers this process is discussed on [this post at Sora JUNK Laboratory](https://www.junk-labs.com/junk/fz-b2.html) which covers the more involved process (you have to install a MOK as you cant turn secure boot off through the menu) of jailbreaking a panasonic Toughpad FZ-B2B. For machines that have the option to turn off secure boot you can just to that and then launch an unsigned efi shell. For non-japanese speakers google translate does a good job translating this.
+For any Japanese readers this process is discussed on [this post at Sora JUNK Laboratory](https://www.junk-labs.com/junk/fz-b2.html) which covers the more involved process (you have to install a MOK as you cant turn secure boot off through the menu) of jailbreaking a panasonic Toughpad FZ-B2B. For machines that have the option to turn off secure boot you can just do that and then launch an unsigned efi shell. For non-japanese speakers google translate does a good job translating this.
 
 ## UEFI password
 If the machine has a user or admin UEFI password it is stored in C811FA38-42C8-4579-A9BB-60E94EDDFB34 (AMITSESetup) and it might be possible to decode it or that nvram entry can be nulled out and flashed back to remove the password. There is more information on that in my post about [a Panasonic CF-U1 here](https://en4rab.github.io/posts/CF-U1-BIOS/).
@@ -98,6 +100,6 @@ To follow the steps in this guide, you will need a combination of firmware analy
 * [**XGecu T48 (TL866-3P)**](http://www.xgecu.com/EN/index.html) – A budget-friendly SPI flash programmer. Essential for creating a "safety net" backup before you start poking at NVRAM.
 
 ### Research & Inspiration
-* [**Sora JUNK Laboratory**](https://www.junk-labs.com/junk/fz-b2.html) – The original post (in Japanese) regarding Panasonic Toughpad jailbreaking that inspired these techniques.
+* [**Sora JUNK Laboratory**](https://www.junk-labs.com/junk/fz-b2.html) – The original post (in Japanese) regarding Panasonic Toughpad jailbreaking that inspired this post.
 * [**Win-Raid Forums**](https://winraid.level1techs.com/) – A community hub for BIOS/UEFI modding.
 * [**My digital Life**](https://forums.mydigitallife.net/) – Another great resource for BIOS hacks
