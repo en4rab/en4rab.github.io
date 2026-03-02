@@ -8,18 +8,19 @@ typora-root-url: ./..
 
 # Tampering with UEFI settings
 
-This is a post on poking at UEFI settings manually and how to find the hidden settings that was inspired by a post on twitter.
+This is a post on poking at UEFI settings manually and how to find the hidden settings that was inspired by a post on twitter. 
+
 ![Twitter Post](/assets/posts/2026-03-02-UEFI-settings/twitter-post.png)
 
 The user had bought a Lenovo M920q and found it had Computrace activated and wanted to turn it off. This is not unusual for second hand machines. Years ago, I removed Computrace from a rugged eBay laptop by replacing the Option ROM. However, that was a [BIOS-based machine](https://www.youtube.com/watch?v=1uQ0qEsXL5c) such tricks won't work on a modern UEFI-based machine.
 While modern UEFI is signed code that you can't tamper with the UEFI variables can still be edited.
 
->I have not tried turning off Computrace by changing UEFI settings and I do not have a suitable test PC so this may not work but I have used this method to change other settings on PC's successfully. If in the future I acquire one i will update this post with confirmation. If you have success or problems let me know and be aware messing with UEFI can potentially brick your machine; do so at your own risk! It should also be noted that these examples are specific to AMI Aptio UEFI however, it should be similar for other brands. Good Luck!
-{: .prompt-warning }
+>I have not tried turning off Computrace by changing UEFI settings and I do not have a suitable test PC so this may not work but I have used this method to change other settings on PC's successfully. If in the future I acquire a test device I will update this post with confirmation. If you have success or problems let me know and be aware messing with UEFI can potentially brick your machine; do so at your own risk! It should also be noted that these examples are specific to AMI Aptio UEFI however, it should be similar for other brands. Good Luck!
+{: .prompt-danger }
 
 ## Forbidden settings
 
-UEFI normally provides a setup interface where you can change some settings of your PC but depending on the manufacturer may have differing options available. If you are reckless and want to break your PC there is a way to find all the options available including all the ones that aren't shown in the setup menu.
+UEFI normally provides a setup interface where you can change some settings of your PC but, depending on the manufacturer, may have differing options available. If you are reckless and want to break your PC there is a way to find all the options available including all the ones that aren't shown in the setup menu.
 Some of these settings are hidden for a good reason and you may brick your PC tampering with them!
 
 UEFI stores the menu settings in a standard way called Internal Form Representation. Using two excellent tools, UEFITool and IFRExtractor-RS by Nikolaj Schlej it is possible to examine a UEFI image by opening it in UEFITool and then extract the setup DXE.
@@ -28,7 +29,7 @@ The IFR data can then be extracted from the setup DXE to create a large text fil
 The examples below are from the Lenovo UEFI file m1ujt78usa.zip I downloaded the USB update image and unzipped it to get the imageM1U.ROM file as an example. It should be representative of the M920q but you should always use your specific UEFI image.
 
 ## Extract the setup DXE
-Open the image file in UEFITool and search for the GUID 899407D7-99FE-43D8-9A21-79EC328CAC21 you should get a match in "Setup/PE32 image section" expand this and right click "extract body.." and save the Section_PE32_image_Setup_Setup_body.efi file
+Open the image file in UEFITool and search for the GUID 899407D7-99FE-43D8-9A21-79EC328CAC21 you should get a match in "Setup/PE32 image section" expand this and right click "extract body.." and save the Section_PE32_image_Setup_Setup_body.efi file. If you use "extract as is.." and get a .sct file this will also work.
 
 ![UEFITool](/assets/posts/2026-03-02-UEFI-settings/UEFITool.png)
 
