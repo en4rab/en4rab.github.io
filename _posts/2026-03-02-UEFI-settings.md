@@ -67,7 +67,7 @@ VarStore Guid: EC87D643-EBA4-4BB5-A1E5-3F3E36B20DA9, VarStoreId: 0x1, Size: 0x13
 ```
 
 So changing EC87D643-EBA4-4BB5-A1E5-3F3E36B20DA9 offset 0x17 to 0x2 should permanently disable Computrace.
-This can be done with a flash reader such as the [XGecu T48](http://www.xgecu.com/EN/index.html) which is probably a good idea so you have a clean backup you can write back in case you brick the PC. 
+This can be done with a flash reader such as the [XGecu T48](http://www.xgecu.com/EN/index.html){: data-proofer-ignore } which is probably a good idea so you have a clean backup you can write back in case you brick the PC. 
 
 ![Computrace Variable](/assets/posts/2026-03-02-UEFI-settings/computrace_var.png)
 
@@ -94,7 +94,7 @@ To follow the steps in this guide, you will need a combination of firmware analy
 
 
 ### Hardware & Recovery
-* [**XGecu T48 (TL866-3P)**](http://www.xgecu.com/EN/index.html) – A budget-friendly SPI flash programmer. Essential for creating a "safety net" backup before you start poking at NVRAM.
+* [**XGecu T48 (TL866-3P)**](http://www.xgecu.com/EN/index.html){: data-proofer-ignore } – A budget-friendly SPI flash programmer. Essential for creating a "safety net" backup before you start poking at NVRAM.
 
 ### Research & Inspiration
 * [**Sora JUNK Laboratory**](https://www.junk-labs.com/junk/fz-b2.html) – The original post (in Japanese) regarding Panasonic Toughpad jailbreaking that inspired these techniques.
