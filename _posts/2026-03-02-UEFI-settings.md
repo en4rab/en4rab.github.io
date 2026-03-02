@@ -3,6 +3,7 @@ title: "Manually tampering with UEFI settings"
 layout: "post"
 categories: ["Research"]
 tags: ["Research","UEFI","Computrace"]
+typora-root-url: ./..
 ---
 
 # Tampering with UEFI settings
@@ -37,7 +38,7 @@ Use ifrextractor to extract all the menu data from .efi file you just saved
 This will create the file Section_PE32_image_Setup_Setup_body.efi.0.0.en-US.uefi.ifr.txt 
 
 The top of this file lists the variable storage GUID's and how they are mapped to VarStoreId. In the example below EC87D643-EBA4-4BB5-A1E5-3F3E36B20DA9 (Setup) is referred to as VarStoreId 0x1.
- 
+
 ![VarStoreId](/assets/posts/2026-03-02-UEFI-settings/UEFITool.png)
 
 Further down you will find all the options including hidden ones. The example below is the setting for Secure boot. It shows the setting is stored at offset 0x0 of VarStore 0x49 and can be either 0x0 "Disabled" or 0x1 "Enabled" with disabled being the default.
