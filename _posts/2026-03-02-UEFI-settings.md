@@ -43,7 +43,7 @@ The top of this file lists the variable storage GUID's and how they are mapped t
 
 Further down you will find all the options including hidden ones. The example below is the setting for Secure boot. It shows the setting is stored at offset 0x0 of VarStore 0x49 and can be either 0x0 "Disabled" or 0x1 "Enabled" with disabled being the default.
 
-![SecureBoot](/assets/posts/2026-03-02-UEFI-settings/Secure-boot-text.png)
+![SecureBoot](/assets/posts/2026-03-02-UEFI-settings/secure-boot-text.png)
 
 Looking at the top of the file to find the UUID associated with VarStore 0x49 
 ```
@@ -67,7 +67,7 @@ VarStore Guid: EC87D643-EBA4-4BB5-A1E5-3F3E36B20DA9, VarStoreId: 0x1, Size: 0x13
 ```
 
 So changing EC87D643-EBA4-4BB5-A1E5-3F3E36B20DA9 offset 0x17 to 0x2 should permanently disable Computrace.
-This can be done with a flash reader such as the [XGecu T48](http://www.xgecu.com/) which is probably a good idea so you have a clean backup you can write back in case you brick the PC. 
+This can be done with a flash reader such as the [XGecu T48](https://www.xgecu.com/) which is probably a good idea so you have a clean backup you can write back in case you brick the PC. 
 
 ![Computrace Variable](/assets/posts/2026-03-02-UEFI-settings/computrace_var.png)
 
@@ -94,7 +94,7 @@ To follow the steps in this guide, you will need a combination of firmware analy
 
 
 ### Hardware & Recovery
-* [**XGecu T48 (TL866-3P)**](http://www.xgecu.com/en/) – A budget-friendly SPI flash programmer. Essential for creating a "safety net" backup before you start poking at NVRAM.
+* [**XGecu T48 (TL866-3P)**](https://www.xgecu.com/en/) – A budget-friendly SPI flash programmer. Essential for creating a "safety net" backup before you start poking at NVRAM.
 
 ### Research & Inspiration
 * [**Sora JUNK Laboratory**](https://www.junk-labs.com/junk/fz-b2.html) – The original post (in Japanese) regarding Panasonic Toughpad jailbreaking that inspired these techniques.
