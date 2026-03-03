@@ -97,7 +97,7 @@ To follow the steps in this guide, you will need a combination of firmware analy
 
 
 ### Hardware & Recovery
-* [**XGecu T48 (TL866-3P)**](http://www.xgecu.com/EN/index.html) – A budget-friendly SPI flash programmer. Essential for creating a "safety net" backup before you start poking at NVRAM.
+* [**XGecu T48**](http://www.xgecu.com/EN/index.html) – A budget-friendly SPI flash programmer. Essential for creating a "safety net" backup before you start poking at NVRAM.
 
 ### Research & Inspiration
 * [**Sora JUNK Laboratory**](https://www.junk-labs.com/junk/fz-b2.html) – The original post (in Japanese) regarding Panasonic Toughpad jailbreaking that inspired this post.
