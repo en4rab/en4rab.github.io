@@ -133,7 +133,13 @@
   // ---------------------------------------------------------------------------
   // Reader -> tag (BPLM)
   // ---------------------------------------------------------------------------
-  function findReaderFrames(sig, low) {
+  // `fieldOns` are the field-return points of field resets. The VVDI sends some frames straight after
+  // one with no start pulse, timing the first bit from the field return (XT136 AF62, 34 T0 after it);
+  // without that edge the frame decodes one bit short. The PM3 sends its own start pulse, and hitager's
+  // all-ones housekeeping also follows field returns, so the return is used only when it is a valid bit
+  // that completes a whole byte.
+  function findReaderFrames(sig, low, fieldOns) {
+    const ons = (fieldOns || []).filter(e => e !== null && e !== undefined).sort((a, b) => a - b);
     const edges = [];
     let run = 0;
     for (let i = 0; i < sig.length; i++) {
@@ -155,8 +161,19 @@
     if (cur.length) frames.push(cur);
 
     const msgs = [];
-    for (const f of frames) {
+    for (let f of frames) {
       if (f.length < 2) continue;
+      let lo = 0, hi = ons.length; // np.searchsorted(ons, f[0]): count of returns before the frame
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (ons[mid] < f[0]) lo = mid + 1; else hi = mid; }
+      const k = lo - 1;
+      if (k >= 0 && f[0] - ons[k] >= C.BPLM_0[0] && f[0] - ons[k] <= C.BPLM_1[1] && f.length % 8 === 0) {
+        let zero = false;
+        for (let q = 1; q < f.length; q++) {
+          const g = f[q] - f[q - 1];
+          if (g >= C.BPLM_0[0] && g <= C.BPLM_0[1]) { zero = true; break; }
+        }
+        if (zero) f = [ons[k]].concat(f);
+      }
       let bits = '';
       for (let k = 1; k < f.length; k++) {
         const g = f[k] - f[k - 1];
@@ -368,10 +385,11 @@
     const start = opts.start || 0, end = opts.end == null ? sig.length : opts.end;
     const low = opts.readerLow == null ? C.READER_LOW : opts.readerLow;
     const floor = opts.tagFloor == null ? C.TAG_FLOOR : opts.tagFloor;
-    const reader = findReaderFrames(sig, low).filter(m => m.end >= start && m.start < end);
+    const resets = findFieldEvents(sig, low);
+    const reader = findReaderFrames(sig, low, resets.map(m => m.fieldOn)).filter(m => m.end >= start && m.start < end);
     let tag = opts.quietTag ? [] : findTagFrames(sig, reader, start, end, floor);
     if (!opts.showNoise) tag = tag.filter(m => !isNoise(m));
-    const field = findFieldEvents(sig, low).filter(m => start <= m.start && m.start < end);
+    const field = resets.filter(m => start <= m.start && m.start < end);
     let msgs = reader.concat(tag, field).sort((a, b) => a.start - b.start);
     if (!opts.showNoise) msgs = msgs.filter(m => !isReaderHousekeeping(m));
     annotateAll(msgs);
@@ -425,6 +443,14 @@
   const rev16 = x => parseInt((x & 0xFFFF).toString(2).padStart(16, '0').split('').reverse().join(''), 2);
   const xt27Seed = reply => (rev16(reply) ^ 0xE12E) & 0xFFFF;
 
+  // Channel-A families, keyed by the reader query whose 16-bit reply seeds the keystream:
+  // [family, seed constant, family query, the family query's 32-bit signature reply].
+  const XT_SEED_QUERIES = {
+    0x7372: ['XT27A', 0xE12E, 0x072F, 0xC8F6B638],
+    0xE430: ['XT136', 0x8C07, 0xE20E, 0x604A027E],
+  };
+  const xtSeed = (reply, constant) => (rev16(reply) ^ constant) & 0xFFFF;
+
   function xt27Keystream(seed, n) {
     let s = [...seed.toString(2).padStart(16, '0')].map(Number);
     const out = s.slice();
@@ -437,9 +463,13 @@
     return out.slice(0, n);
   }
 
-  function xt27CmdNote(kind, nbits, pt) {
+  function xt27CmdNote(kind, nbits, pt, lastCmd) {
     if (nbits === 16) {
       const p = Number(pt);
+      // a ctl is echoed swapped (~op,op), which would otherwise read as a READ echo
+      if (kind === 'TAG' && lastCmd !== null && (lastCmd >> 14) === 0 && p === (((lastCmd & 0xFF) << 8) | (lastCmd >> 8))) {
+        return `ctl page 0x${hex((lastCmd >> 8) & 0x3F, 2)} (echo, swapped ~op,op)`;
+      }
       if (((p >> 8) ^ (p & 0xFF)) === 0xFF) {
         const op = p >> 8;
         return `${XT27_OPS[op >> 6]} ${(op >> 6) === 1 ? 'bank' : 'page'} 0x${hex(op & 0x3F, 2)}` + (kind === 'TAG' ? ' (echo)' : '');
@@ -455,28 +485,36 @@
   }
 
   function decryptPass(msgs) {
-    let ks = null, curSeed = null, pos = 0, armed = null, idbytes = {}, pendingRead = null, prev7372 = false;
+    let ks = null, curSeed = null, pos = 0, armed = null, idbytes = {}, pendingRead = null;
+    let seedQuery = null, lastCmd = null; // seedQuery: 0x7372 / 0xE430 just sent, so the next tag reply is the key
     for (const m of msgs) {
       const kind = m.kind;
-      if (kind === 'FIELD') { ks = curSeed = null; armed = pendingRead = null; idbytes = {}; prev7372 = false; continue; }
+      if (kind === 'FIELD') { ks = curSeed = null; armed = pendingRead = null; idbytes = {}; seedQuery = lastCmd = null; continue; }
       const bits = m.bits.replace(/\?/g, '0');
       if (kind === 'TAG' && m.coding === 'MC32' && bits.length >= 16
-          && (prev7372 || (parseInt(bits.slice(0, 16), 2) >> 4) === 0x6B3)) {
-        armed = parseInt(bits.slice(0, 16), 2) & 0xFFFF; // FULL 16-bit reply; seed = bitrev16(reply) ^ 0xE12E
-        prev7372 = false;
+          && (seedQuery !== null || (parseInt(bits.slice(0, 16), 2) >> 4) === 0x6B3)) {
+        // the FULL 16-bit reply; seed = bitrev16(reply) ^ the family constant
+        armed = { reply: parseInt(bits.slice(0, 16), 2) & 0xFFFF, fam: XT_SEED_QUERIES[seedQuery !== null ? seedQuery : 0x7372] };
+        seedQuery = null;
         continue;
       }
-      prev7372 = kind === 'READER' && bits.length >= 16 && parseInt(bits.slice(0, 16), 2) === 0x7372;
+      seedQuery = null;
+      if (kind === 'READER' && bits.length >= 16 && parseInt(bits.slice(0, 16), 2) in XT_SEED_QUERIES) {
+        seedQuery = parseInt(bits.slice(0, 16), 2);
+      }
       let fourR = false;
       if (kind === 'READER' && armed !== null) {
-        curSeed = xt27Seed(armed);
-        if (bits.length >= 16) { // safety net: the first command is always a valid 'sel' frame
+        const famName = armed.fam[0];
+        curSeed = xtSeed(armed.reply, armed.fam[1]);
+        // XT27A safety net: its first command is always a valid 'sel' frame. The XT136 has no fixed opener.
+        if (famName === 'XT27A' && bits.length >= 16) {
           const ct0 = parseInt(bits.slice(0, 16), 2), pt = ct0 ^ curSeed;
           const validSel = (((pt >> 8) ^ (pt & 0xFF)) === 0xFF) && (pt >> 14) === 1;
           if (!validSel) curSeed = ct0 ^ 0x41BE;
         }
         ks = xt27Keystream(curSeed, 8192);
-        pos = 0; armed = null; idbytes = {}; pendingRead = null; fourR = true;
+        pos = 0; armed = null; idbytes = {}; pendingRead = null; lastCmd = null;
+        fourR = famName === 'XT27A'; // keeps annotate()'s start-of-comms note for this one
       }
       if (ks === null) continue;
 
@@ -489,14 +527,15 @@
       pos += nEff;
 
       if (!fourR) {
-        m.note = `${nEff}-bit encrypted ${nEff === 16 ? 'command' : 'data'}`;
+        m.note = `${nEff}-bit encrypted ${kind === 'TAG' ? 'reply' : nEff === 16 ? 'command' : 'data'}`;
         if (m.violations) m.note += `  [${m.violations} decode violation(s), marked '?']`;
       }
-      const digits = nEff >> 2, cmd = xt27CmdNote(kind, nEff, pt);
+      const digits = nEff >> 2, cmd = xt27CmdNote(kind, nEff, pt, lastCmd);
       m.note += `\nDECRYPT  ct 0x${hex(ct, digits)}  pt 0x${hex(pt, digits)}  ${cmd}`;
       m.decrypt = { ct: hex(ct, digits), pt: hex(pt, digits), cmd, bits: nEff };
 
       const p16 = Number(pt & 0xFFFFn);
+      if (kind === 'READER' && nEff === 16) lastCmd = p16;
       if (kind === 'READER' && nEff === 16 && (((p16 >> 8) ^ (p16 & 0xFF)) === 0xFF) && (p16 >> 14) === 3) {
         pendingRead = (p16 >> 8) & 0x3F;
       } else if (kind === 'TAG' && nEff === 32 && pendingRead !== null) {
@@ -525,6 +564,8 @@
   const KNOWN_16BIT = {
     0x072F: 'AUTH query #1 (hitager authcmd2)',
     0x7372: "AUTH query #2 (hitager authcmd3) -- the tag's reply is hitager's timing-sync value",
+    0xE20E: "XT136 family query (an XT136 answers 604A027E; the XT27A's equivalent is 072F)",
+    0xE430: "XT136 seed query (the tag's 16-bit reply seeds the keystream; XT27A equivalent: 7372)",
   };
   const BRUTE_CMD_16 = { 0x263A: '#1', 0xA81C: '#2' };
   const BRUTE_CMD_32 = { 0x018E5995: '#3' };
@@ -559,6 +600,7 @@
       if (prev && prev.replyTo === 0x7372) {
         return `Start of encrypted comms; sel bank 0x01 `;
       }
+      if (prev && prev.replyTo === 0xE430) return 'first encrypted XT136 command (seed = bitrev16(E430 reply) ^ 0x8C07)';
       return `16-bit reader value 0x${hex(v, 4)} -- not yet characterized`;
     }
     if (nbits === 48) {
@@ -622,11 +664,21 @@
     const pby = bitsToBytes(prev.bits), pn = prev.bits.length, pbs = bytesStr(pby);
     const pval = Number(bitsToBig(prev.bits));
     if (pn === 48 && VENDOR_MAGIC.has(pbs)) return `tag ACK of "${pbs}" (${vh})${sof}`;
-    if (pn === 16 && pval === 0x072F) return `tag reply to 072F${sof}`;
+    if (pn === 16 && (pval === 0x072F || pval === 0xE20E)) {
+      const sig = XT_SEED_QUERIES[pval === 0x072F ? 0x7372 : 0xE430];
+      const pv = pval.toString(16).toUpperCase().padStart(4, '0');
+      if (nbits === 32 && v === sig[3]) return `tag reply to ${pv}: *** ${sig[0]} family signature ***${sof}`;
+      return `tag reply to ${pv} (not a known family signature)${sof}`;
+    }
     if (pn === 16 && pval === 0x7372) {
       msg.replyTo = 0x7372;
       return `tag reply to 7372: hitager's timing-sync value; last nibble ${(v & 0xF).toString(2).padStart(4, '0')} = `
            + `tag nibble ${sof}`;
+    }
+    if (pn === 16 && pval === 0xE430) {
+      msg.replyTo = 0xE430;
+      return `tag reply to E430: XT136 seed reply, seed = bitrev16(0x${hex(v & 0xFFFF, 4)}) ^ 0x8C07 `
+           + `= 0x${hex(xtSeed(v & 0xFFFF, 0x8C07), 4)}${sof}`;
     }
     if (pn === 5 && prev.bits === '11000') return `UID ${vh} (reply to START_AUTH)${sof}`;
     if (pn === 4 && pval === 0b0011) {
@@ -675,7 +727,7 @@
 
   const api = {
     C, parsePm3, decodeTrace, findReaderFrames, findFieldEvents, findTagFrames,
-    bitsToHex, bitsToBytes, crc8, xt27Seed, xt27Keystream,
+    bitsToHex, bitsToBytes, crc8, xt27Seed, xtSeed, xt27Keystream,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.XT27 = api;

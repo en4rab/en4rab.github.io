@@ -257,7 +257,7 @@ This layout was checked against two captures. Whether the chip itself validates 
 
 ## Comparing sessions
 
-Hopefully you now have a feel for how the communications with these chips works. Below you can find another viewer but with more recordings to choose from so you can investigate other configurations or maybe work out exactly how the VVDI mini resets chips that have been configured as ID11, ID12 and ID13.
+Hopefully you now have a feel for how the communications with these chips works. Below you can find another viewer but with more recordings to choose from so you can investigate other configurations or maybe work out exactly how the VVDI mini resets chips that have been configured as ID11, ID12 and ID13. The last two recordings are from an xt136, see [the xt136 post]({% post_url 2026-10-31-XT136-Super-Chip %}).
 
 {% assign tb = '/assets/posts/2026-10-29-XT27A-Super-Chip/traces/' | relative_url %}
 <div data-trace-viewer data-height="460" data-traces="{{ tb }}set-id4C-pt2-d3da834c7e39ee98.pm3.gz|Set xt27a as ID4C - d3da834c7e39ee98,
@@ -273,7 +273,9 @@ Hopefully you now have a feel for how the communications with these chips works.
 {{ tb }}xt27b-read-1.pm3.gz|read xt27b (xt37b),
 {{ tb }}read-transponder-xt57b.pm3.gz|Read xt57b,
 {{ tb }}set-transponder-id46-xt57b.pm3.gz|Set xt57b to ID46,
-{{ tb }}reset-transponder-xt57b.pm3.gz|Reset xt57b"></div>
+{{ tb }}reset-transponder-xt57b.pm3.gz|Reset xt57b,
+{{ tb }}vvdi-xt136-read-after-reset.pm3.gz|Read xt136 after a reset (VVDI mini),
+{{ tb }}vvdi-xt136-reset-1.pm3.gz|Reset xt136 (VVDI mini)"></div>
 
 ## How sure am I?
 
