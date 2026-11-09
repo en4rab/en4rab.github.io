@@ -275,7 +275,16 @@ Hopefully you now have a feel for how the communications with these chips works.
 {{ tb }}set-transponder-id46-xt57b.pm3.gz|Set xt57b to ID46,
 {{ tb }}reset-transponder-xt57b.pm3.gz|Reset xt57b,
 {{ tb }}vvdi-xt136-read-after-reset.pm3.gz|Read xt136 after a reset (VVDI mini),
-{{ tb }}vvdi-xt136-reset-1.pm3.gz|Reset xt136 (VVDI mini)"></div>
+{{ tb }}vvdi-xt136-reset-1.pm3.gz|Reset xt136 (VVDI mini),
+{{ tb }}vvdi-xt157b-c-read1.pm3.gz|Read xt57b tag 1 of 9 (VVDI mini),
+{{ tb }}vvdi-xt157b-c-read2.pm3.gz|Read xt57b tag 2 of 9 (VVDI mini),
+{{ tb }}vvdi-xt157b-c-read3.pm3.gz|Read xt57b tag 3 of 9 (VVDI mini),
+{{ tb }}vvdi-xt157b-c-read4.pm3.gz|Read xt57b tag 4 of 9 (VVDI mini),
+{{ tb }}vvdi-xt157b-c-read5.pm3.gz|Read xt57b tag 5 of 9 (VVDI mini),
+{{ tb }}vvdi-xt157b-c-read6.pm3.gz|Read xt57b tag 6 of 9 (VVDI mini),
+{{ tb }}vvdi-xt157b-c-read7.pm3.gz|Read xt57b tag 7 of 9 (VVDI mini),
+{{ tb }}vvdi-xt157b-c-read8.pm3.gz|Read xt57b tag 8 of 9 (VVDI mini),
+{{ tb }}vvdi-xt157b-c-read9.pm3.gz|Read xt57b tag 9 of 9 (VVDI mini)"></div>
 
 ## How sure am I?
 
