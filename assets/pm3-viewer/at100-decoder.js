@@ -504,32 +504,77 @@
   const AT100_KEY = 0x9F63A5E8B14Bn;    // device/management key, shared across blanks (docs/at100.md)
   const AT100_KEY_REV = revBits(AT100_KEY, 48);
 
+  // Emulated-type catalogue, keyed by the page-0xFE config word (docs/at100.md §9c, mirrored from
+  // proxmark3/client/src/cmdlfautel.c). ID11/12/13 share one code, as do ID4D and the 80-bit ID4D.
+  const AT100_TYPES = {
+    0x9B04019B: 'ID11 / ID12 / ID13 (Temic fixed-code / EM4102)',
+    0x8F08029B: '7936 / ID46 (PCF7936, HITAG2)',
+    0x8F0C039B: '7946 (PCF7946, HITAG2)',
+    0x8F10049B: '7937 (PCF7937, HITAG2)',
+    0x8F14059B: '7938 / ID47',
+    0x8F18069B: 'ID4A',
+    0x8F1C079B: '7939 / ID49',
+    0x8F20089B: 'ID5C / MQB49',
+    0x9B25099B: 'ID4C (Texas TIRIS)',
+    0x9B290A9B: 'ID4D / 4D80 (Texas DST40/80; factory default)',
+    0x9B2D0B9B: 'ID4E (Texas)',
+    0x9B310C9B: 'ID8A (Texas DST128)',
+    0x8F360D9B: 'ID48 (Megamos Crypto)',
+    0x8F3A0E9B: 'MQB / ID8B (Megamos AES)',
+    0x8F3E0F9B: 'ID8C',
+  };
+  // Name a page-0xFE config word, falling back to the type index when the exact word is unknown.
+  function at100TypeName(v) {
+    v >>>= 0;
+    if (AT100_TYPES[v]) return AT100_TYPES[v];
+    if ((v & 0xFF) === 0x9B) return `type index 0x${hex((v >> 8) & 0xFF, 2)} (unrecognised config word)`;
+    return null;
+  }
+  // Human-readable role of a page address, for READ/WRITE command annotations (docs/at100.md §8).
+  function at100PageRole(page) {
+    if (page === 0xFE) return ' (type/config register)';
+    if (page === 0xFC) return ' (device-key page = low 32 bits of 9F63A5E8B14B)';
+    return '';
+  }
+
   // Decrypt a 20-bit post-auth command word: it carries a 10-bit payload twice, true then complemented
-  // ({W}{~W}). Opcode = top 2 bits of the payload: 10 = WRITE page, 01 = READ. Returns a label or null.
+  // ({W}{~W}). Opcode = top 2 bits of the payload: 10 = WRITE page, 01 = READ. Returns {label, op, page}
+  // or null when the complement check fails.
   function at100CmdWord(pt20) {
     const hi10 = (pt20 >> 10) & 0x3FF, lo10 = pt20 & 0x3FF;
     if (((hi10 ^ lo10) & 0x3FF) !== 0x3FF) return null; // not a valid {W}{~W}
     const op = hi10 >> 8, page = hi10 & 0xFF;
-    if (op === 2) return `WRITE page 0x${hex(page, 2)}`;
-    if (op === 1) return `READ 0x${hex(hi10, 3)}`;
-    return `cmd 0x${hex(hi10, 3)}`;
+    if (op === 2) return { label: `WRITE page 0x${hex(page, 2)}${at100PageRole(page)}`, op, page };
+    if (op === 1) return { label: `READ page 0x${hex(page, 2)}${at100PageRole(page)}`, op, page };
+    return { label: `cmd 0x${hex(hi10, 3)}`, op, page };
   }
 
-  function at100DataNote(pt32) {
+  // Annotate a 32-bit plaintext data word. `page` (if known) is the address the preceding command
+  // targeted, so a value written to / read from page 0xFE is named as the emulated type.
+  function at100DataNote(pt32, page) {
+    pt32 >>>= 0;
+    if (page === 0xFE) {
+      const t = at100TypeName(pt32);
+      return `page 0xFE config word 0x${hex(pt32, 8)}${t ? ` -- emulated type ${t}` : ''}`;
+    }
+    if (page === 0xFC) return `page 0xFC = 0x${hex(pt32, 8)} (low 32 bits of the device key 9F63A5E8B14B)`;
     const b = [(pt32 >>> 24) & 255, (pt32 >>> 16) & 255, (pt32 >>> 8) & 255, pt32 & 255];
     const asc = b.map(c => (c >= 32 && c < 127 ? String.fromCharCode(c) : '.')).join('');
     const txt = b.some(c => c >= 32 && c < 127) && b.some(c => c) ? `  "${asc}"` : '';
-    return `data 0x${hex(pt32 >>> 0, 8)}${txt}`;
+    return `data 0x${hex(pt32, 8)}${txt}`;
   }
 
   function decryptPass(msgs) {
     let st = null, uid = null, pendingRead = false;
+    let expectToken = false;   // next 32-bit tag frame after auth is the page-0xFE config word
+    let cmdPage = null;        // page addressed by the last decoded READ/WRITE command
     for (const m of msgs) {
-      if (m.kind === 'FIELD') { st = null; uid = null; pendingRead = false; continue; }
+      if (m.kind === 'FIELD') { st = null; uid = null; pendingRead = false; expectToken = false; cmdPage = null; continue; }
       const bits = m.bits.replace(/\?/g, '0');
       const n = bits.length;
 
-      // Track the UID from the cleartext page-0 read: a 10-bit reader read (0x3E0) then a 32-bit reply.
+      // Track the device UID from the cleartext get-UID exchange: the 10-bit reader get-UID frame
+      // (0x3E0 = the AT100's own {11111}{00000} framing) then its 32-bit reply.
       if (st === null && m.kind === 'READER' && n === 10) {
         pendingRead = (parseInt(bits, 2) & 0x3FF) === 0x3E0;
         continue;
@@ -549,6 +594,7 @@
         m.note += `\nAUTH  key 0x${hex(AT100_KEY, 12)}  UID 0x${hex(uid, 8)}  IV 0x${hex(nR, 8)}`
                 + `  aR ${aRks === aR ? 'verified' : 'MISMATCH (0x' + hex(aRks, 8) + ')'}`;
         m.decrypt = { ct: hex(aR, 8), pt: hex(aRks, 8), cmd: 'aR (auth answer)', bits: 32 };
+        expectToken = true; cmdPage = null;
         continue;
       }
       if (st === null) continue;
@@ -561,9 +607,20 @@
       const digits = Math.ceil(nEff / 4);
       let cmd;
       if (nEff === 20) {
-        cmd = at100CmdWord(Number(pt)) || `0x${hex(pt, 5)}`;
+        const c = at100CmdWord(Number(pt));
+        cmd = c ? c.label : `0x${hex(pt, 5)}`;
+        // A 20-bit reader frame is a command; a 20-bit tag frame is the WRITE echo of it. Either way
+        // it names the page the following 32-bit data word belongs to.
+        if (c) cmdPage = c.page;
       } else if (nEff === 32) {
-        cmd = at100DataNote(Number(pt));
+        if (expectToken) {        // the config word the tag auto-returns right after auth
+          const t = at100TypeName(Number(pt));
+          cmd = `page 0xFE config word 0x${hex(pt, 8)} (auto-returned after auth)${t ? ` -- emulated type ${t}` : ''}`;
+          expectToken = false;
+        } else {
+          cmd = at100DataNote(Number(pt), cmdPage);
+          cmdPage = null;         // consumed by this data word
+        }
       } else {
         cmd = `0x${hex(pt, digits)}`;
       }
@@ -584,25 +641,28 @@
            + 'between TX and the tag-read window, not a command';
     }
     if (nbits === 40 && val === AT100_OPENER) {
-      return 'Autel opener 0x1001002E3E -- constant 40-bit wake/select at the start of every read '
-           + '(not yet characterised)';
+      return 'Autel opener 0x1001002E3E -- constant 40-bit frame that opens the identify probe sweep; '
+           + 'the AT100 does not answer it (not yet characterised)';
     }
     if (nbits === 4) {
-      if (v === 0b0011) return "4-bit 0011: HITAG2 identify/drill query -- tag answers with its ID";
-      if (v === 0b1010) return '4-bit 1010: pre-read handshake query (tag echoes 1010)';
+      if (v === 0b0011) return '4-bit 0011: HITAG2-style identify query in the Autel probe sweep -- '
+                             + 'the AT100 ignores it';
+      if (v === 0b1010) return '4-bit 1010: AT100 wake handshake (the tag echoes 1010 verbatim)';
       return `4-bit query ${bits}`;
     }
-    if (nbits === 5 && bits === '11000') return 'HITAG2 START_AUTH (standard command; the tag answers with its UID)';
-    if (nbits === 5 && bits === '00000') return 'HITAG2 HALT';
-    if (nbits === 5) return `5-bit HITAG2 command ${bits}`;
-    if (nbits === 8 && (v & 0xF8) === 0x00) return `HITAG2 READ page ${v & 0x07} (query)`;
+    if (nbits === 5 && bits === '11000') return 'HITAG2 START_AUTH (standard entry) -- part of the probe '
+                                              + 'sweep; the AT100 ignores it, entry is the 1010 handshake';
+    if (nbits === 5 && bits === '00000') return 'HITAG2 HALT (probe sweep; ignored by the AT100)';
+    if (nbits === 5) return `5-bit HITAG2 probe-sweep command ${bits} (ignored by the AT100)`;
+    if (nbits === 8 && (v & 0xF8) === 0x00) return `HITAG2 READ page ${v & 0x07} (probe sweep; ignored)`;
     if (nbits === 10) {
-      if (v === 0x3E0) return 'HITAG2 READ page 0 (0x3E0); the tag returns its 32-bit UID in clear';
-      return `HITAG2 post-auth command frame (10-bit, 0x${hex(v, 3)})`;
+      if (v === 0x3E0) return 'get-UID (0x3E0 = the AT100\'s own {11111}{00000} framing, NOT a HITAG2 '
+                            + 'read) -- the tag returns its 32-bit device UID in clear';
+      return `10-bit frame 0x${hex(v, 3)}`;
     }
     if (nbits === 20) {
-      return '20-bit post-auth command (encrypted; {word}{~word}, 0x2xx=WRITE page / 0x1xx=READ -- '
-           + 'see the decrypted line)';
+      return '20-bit post-auth command (encrypted; {word}{~word}, op:2|page:8, 10=WRITE page / '
+           + '01=READ page -- see the decrypted line)';
     }
     if (nbits === 32) return `32-bit reader data (encrypted; see the decrypted line)`;
     if (nbits === 64) {
@@ -627,14 +687,12 @@
       return `${nbits}-bit tag frame, outside the reply window after the last command${sof}`;
     }
     const pn = prev.bits.length, pval = Number(bitsToBig(prev.bits));
-    if (pn === 5 && prev.bits === '11000') return `UID ${vh} (reply to START_AUTH)${sof}`;
-    if (pn === 4 && pval === 0b1010) return `handshake echo ${vh} (reply to 1010)${sof}`;
-    if (pn === 4 && pval === 0b0011) return `tag ID reply to the identify query (${vh})${sof}`;
-    if (pn === 10 && pval === 0x3E0) return `page-0 UID ${vh} (cleartext read)${sof}`;
-    if (pn === 10) return `page data ${vh} (reply to 0x${hex(pval, 3)})${sof}`;
-    if (pn === 20 && nbits === 20) return `20-bit tag echo/ack ${vh} (encrypted WRITE ack; see the decrypted line)${sof}`;
+    if (pn === 4 && pval === 0b1010) return `wake echo ${vh} (the tag echoes the 1010 handshake)${sof}`;
+    if (pn === 10 && pval === 0x3E0) return `device UID ${vh} (cleartext, reply to get-UID)${sof}`;
+    if (pn === 10) return `tag reply ${vh} (to 0x${hex(pval, 3)})${sof}`;
+    if (pn === 20 && nbits === 20) return `20-bit WRITE echo ${vh} (encrypted; the tag repeats the command word -- see the decrypted line)${sof}`;
     if (pn === 20) return `32-bit page data ${vh} (encrypted READ reply; see the decrypted line)${sof}`;
-    if (pn === 64) return `post-auth token ${vh} (encrypted; the AT100's config/password page)${sof}`;
+    if (pn === 64) return `page-0xFE config word ${vh} (encrypted; auto-returned after auth, the current emulated type -- see the decrypted line)${sof}`;
     return `${nbits}-bit tag reply${sof}`;
   }
 
